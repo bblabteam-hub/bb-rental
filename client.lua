@@ -77,7 +77,7 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Spawn NPCs at rental locations
+-- Spawn NPCs at rental locations (fixed)
 Citizen.CreateThread(function()
     for k, location in pairs(Config.RentalLocations) do
         local model = GetHashKey(location.npc.model)
@@ -86,15 +86,17 @@ Citizen.CreateThread(function()
             Wait(1)
         end
 
-        -- Adjust Z to ground level
-        local x, y, z = location.npc.coords.x, location.npc.coords.y, location.npc.coords.z
+        local x, y, z, w = location.npc.coords.x, location.npc.coords.y, location.npc.coords.z, location.npc.coords.w
         local foundGround, groundZ = GetGroundZFor_3dCoord(x, y, z, 0)
         if foundGround then
             z = groundZ
+        else
+            print(("[DEBUG] Ground not found for NPC %s at (%.2f, %.2f, %.2f) — using provided Z"):format(location.npc.model, x, y, z))
         end
 
-        local npc = CreatePed(4, model, x, y, z, location.npc.coords.w, false, true)
-        SetEntityHeading(npc, location.npc.coords.w)
+        local npc = CreatePed(4, model, x, y, z - 0.05, w, false, true)
+        SetEntityHeading(npc, w)
+        SetEntityAsMissionEntity(npc, true, true)
         FreezeEntityPosition(npc, true)
         SetEntityInvincible(npc, true)
         SetBlockingOfNonTemporaryEvents(npc, true)
@@ -102,12 +104,14 @@ Citizen.CreateThread(function()
 
         if location.npc.scenario then
             TaskStartScenarioInPlace(npc, location.npc.scenario, 0, true)
+        else
+            TaskStartScenarioInPlace(npc, "WORLD_HUMAN_STAND_IMPATIENT", 0, true)
         end
 
+        print(("[DEBUG] Spawned NPC '%s' at (%.2f, %.2f, %.2f) heading %.2f"):format(location.npc.model, x, y, z, w))
         table.insert(spawnedNPCs, npc)
     end
 end)
-
 
 -- Interaction with NPCs (if not using target)
 if not Config.Settings.useTarget then
@@ -211,7 +215,6 @@ RegisterNUICallback('rentVehicle', function(data, cb)
     local vehicleData = Config.Vehicles[data.index]
 
     if vehicleData then
-        -- Close NUI immediately
         SetNuiFocus(false, false)
         TriggerServerEvent('car-rental:server:rentVehicle', vehicleData, currentLocation)
     end
@@ -230,22 +233,18 @@ AddEventHandler('car-rental:client:spawnVehicle', function(vehicleData, location
         return
     end
 
-    -- Request vehicle model
     local modelHash = GetHashKey(vehicleData.model)
     RequestModel(modelHash)
-
     while not HasModelLoaded(modelHash) do
         Citizen.Wait(100)
     end
 
-    -- Spawn vehicle
     local vehicle = CreateVehicle(modelHash, spawnPoint.x, spawnPoint.y, spawnPoint.z, spawnPoint.w, true, false)
     SetEntityAsMissionEntity(vehicle, true, true)
     SetVehicleNumberPlateText(vehicle, Config.Settings.platePrefix .. math.random(1000, 9999))
     SetVehicleFuelLevel(vehicle, 100.0)
     SetVehicleDirtLevel(vehicle, 0.0)
 
-    -- Give keys (framework specific)
     local plate = GetVehicleNumberPlateText(vehicle)
     if Config.Framework == 'esx' then
         TriggerEvent('esx_vehiclelock:setVehicleLock', plate, false)
@@ -253,7 +252,6 @@ AddEventHandler('car-rental:client:spawnVehicle', function(vehicleData, location
         TriggerEvent('vehiclekeys:client:SetOwner', plate)
     end
 
-    -- Store rental info
     currentRental = {
         vehicle = vehicle,
         plate = plate,
@@ -262,13 +260,8 @@ AddEventHandler('car-rental:client:spawnVehicle', function(vehicleData, location
         locationIndex = locationIndex
     }
 
-    -- Wait a moment for vehicle to fully spawn
     Citizen.Wait(500)
-
-    -- Put player in vehicle
-    local playerPed = PlayerPedId()
-    TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
-
+    TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
     ShowNotification(Config.Lang.vehicleRented)
 end)
 
@@ -282,7 +275,6 @@ Citizen.CreateThread(function()
             local playerCoords = GetEntityCoords(playerPed)
             local vehicle = currentRental.vehicle
 
-            -- Check if vehicle still exists
             if not DoesEntityExist(vehicle) then
                 currentRental = nil
             else
@@ -292,10 +284,8 @@ Citizen.CreateThread(function()
 
                 if distance < Config.Settings.returnDistance then
                     sleep = 0
-
                     if IsPedInAnyVehicle(playerPed, false) and GetVehiclePedIsIn(playerPed, false) == vehicle then
                         DrawText3D(returnCoords.x, returnCoords.y, returnCoords.z, "Press ~g~E~w~ to return vehicle")
-
                         if IsControlJustReleased(0, Config.Keys.interact) then
                             ReturnVehicle()
                         end
@@ -310,19 +300,15 @@ end)
 
 -- Return vehicle function
 function ReturnVehicle()
-    if not currentRental then
-        return
-    end
+    if not currentRental then return end
 
     local playerPed = PlayerPedId()
     local vehicle = currentRental.vehicle
 
     if IsPedInAnyVehicle(playerPed, false) and GetVehiclePedIsIn(playerPed, false) == vehicle then
         TriggerServerEvent('car-rental:server:returnVehicle', currentRental.deposit)
-
         TaskLeaveVehicle(playerPed, vehicle, 0)
         Citizen.Wait(2000)
-
         DeleteVehicle(vehicle)
         currentRental = nil
     end
@@ -373,7 +359,7 @@ end
 -- Draw 3D text
 function DrawText3D(x, y, z, text)
     local onScreen, _x, _y = World3dToScreen2d(x, y, z)
-    local px, py, pz = table.unpack(GetGameplayCamCoords())
+    if not onScreen then return end
 
     SetTextScale(0.35, 0.35)
     SetTextFont(4)
@@ -401,12 +387,10 @@ end
 -- Cleanup on resource stop
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() == resourceName then
-        -- Delete spawned NPCs
         for _, npc in pairs(spawnedNPCs) do
             DeleteEntity(npc)
         end
 
-        -- Delete rented vehicle
         if currentRental then
             DeleteVehicle(currentRental.vehicle)
         end

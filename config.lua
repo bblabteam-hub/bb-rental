@@ -16,7 +16,7 @@ Config.RentalLocations = {
         },
         npc = {
             model = "a_m_y_business_01",
-            coords = vector4(180.27, -1008.47, 30.27, 152.02),
+            coords = vector4(181.36, -1010.03, 29.33, 158.91),
             scenario = "WORLD_HUMAN_CLIPBOARD"
         },
         spawnPoints = { -- Where rented cars spawn
