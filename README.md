@@ -163,11 +163,7 @@ bb-rental/
         └── script.js   # NUI JavaScript
 ```
 
-## Credits
-
-Created for FiveM QBCore servers
-Compatible with ESX and QBCore frameworks
-
 ## License
 
 Free to use and modify for your FiveM server
+
