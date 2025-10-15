@@ -1,7 +1,7 @@
 fx_version 'cerulean'
 game 'gta5'
 
-author 'Your Name'
+author 'bb lab'
 description 'Advanced Car Rental Script for ESX & QBCore'
 version '1.0.0'
 
