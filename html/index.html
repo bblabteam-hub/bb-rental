@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Rental</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="container" class="hidden">
+        <div class="rental-menu">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-content">
+                    <h1>Car Rental</h1>
+                    <p class="subtitle">Choose your perfect ride</p>
+                </div>
+                <button class="close-btn" onclick="closeMenu()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Current Rental Info -->
+            <div id="currentRental" class="current-rental hidden">
+                <div class="rental-info">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <span>You currently have a rented vehicle</span>
+                </div>
+                <button class="return-btn" onclick="returnVehicle()">Return Vehicle</button>
+            </div>
+
+            <!-- Vehicle Grid -->
+            <div class="vehicles-container">
+                <div id="vehiclesList" class="vehicles-grid">
+                    <!-- Vehicles will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>All prices include rental fee + refundable deposit</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
